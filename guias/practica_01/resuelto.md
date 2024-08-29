@@ -254,3 +254,290 @@ Soy Julieta
 Soy Jennifer
 Soy Jorge
 ```
+
+### Ejercicio 11
+
+#### a)
+```c
+void rutina_padre(pid_t pid_hijo){
+    int msg = 0;
+    while(13){
+        // Envio a hijo msg
+        bsend(pid_hijo, msg);
+        // Recibo de hijo msg e incremento
+        msg = breceive(pid_hijo);
+        msg++;
+    }
+}
+
+void rutina_hijo(pid_t pid_padre){
+    int msg;
+    while(13){
+        // Recibo de padre msg
+        msg = breceive(pid_padre);
+        msg++; // Incremento y envio a padre
+        bsend(pid_padre, msg);
+    }
+}
+
+int main(){
+    pid_t pid_padre = get_current_pid();
+    pid_t pid_hijo = fork();
+
+    if(pid_hijo < 0) // si falla el forkeo
+        exit(EXIT_FAILURE);
+
+    if(pid_hijo == 0){
+        rutina_hijo(pid_padre);
+    } else {
+        rutina_padre(pid_hijo);
+    }
+
+    return 0;
+}
+```
+
+#### b)
+
+```c
+void rutina_padre(pid_t pid_hijo1, pid_t pid_hijo2){
+    int msg = 0;
+    while(msg != 50){
+        // Envio a hijo1 msg
+        bsend(pid_hijo1, msg);
+        // Recibo de hijo2 msg e incremento
+        msg = breceive(pid_hijo2);
+        msg++;
+    }
+    exit(0);
+}
+
+void rutina_hijo1(pid_t pid_padre, pid_t pid_hijo2){
+    int msg;
+    while(msg != 50){
+        // Recibo de padre msg
+        msg = breceive(pid_padre);
+        msg++; // Incremento y envio a hijo2
+        bsend(pid_hijo2, msg);
+    }
+    exit(0);
+}
+
+void rutina_hijo2(pid_t pid_hijo1, pid_t pid_padre){
+    int msg;
+    while(msg != 50){
+        // Recibo de hijo1 msg
+        msg = breceive(pid_hijo1);
+        msg++; // Incremento y envio a padre
+        bsend(pid_padre, msg);
+    }
+    exit(0);
+}
+
+int main(){
+    pid_t pid_padre = get_current_pid();
+    pid_t pid_hijo1 = fork();
+    pid_t pid_hijo2 = fork();
+
+    if(pid_hijo1 < 0 || pid_hijo2 < 0) // si falla algun forkeo
+        exit(EXIT_FAILURE);
+
+    if(pid_hijo1 == 0){
+        rutina_hijo1(pid_padre, pid_hijo2);
+    } else if(pid_hijo2 == 0){
+        rutina_hijo2(pid_hijo1, pid_padre);
+    } else {
+        rutina_padre(pid_hijo1, pid_hijo2);
+    }
+
+    return 0;
+}
+```
+Hubiera sido mucho mas limpio si hiciera una funcion para los 3 casos y solo tomara pids de parametro para hacer lo que tiene que hacer, pero me dio fiaca asi que mejor copypastear.
+
+### Ejercicio 12
+
+El problema de intentar seguir esa secuencia de ejecución es que las syscalls `bsend()` y `breceive()` son bloqueantes, y la cola de mensajes es de capacidad 0.  
+
+Como el `proceso_derecha` comienza por ` cómputo_muy_difícil_2();`, y el `proceso_izquierda` comienza por el `bsend()`, este último debe esperar a que el otro proceso ejecute el `breceive()`, por lo que ya desde el comienzo de cada ciclo quedan "desfasados" los procesos y no pueden cada uno seguir la secuencia del enunciado.
+
+### Ejercicio 14
+
+#### a)
+
+```c
+void proceso_izquierda() {
+    result = 0;
+    while (true) {
+        while (!send(pid_derecha, &result)) {}
+        result = cómputo_muy_difícil_1();
+    }
+}
+
+void proceso_derecha() {
+    int left_result;
+    while (true) {
+        result = cómputo_muy_difícil_2();
+
+        while (!receive(pid_izquierda, &left_result)) {}
+        printf(" %d %d", left_result, result);
+    }
+}
+```
+
+### Ejercicio 16
+
+Hecho en clase:
+
+```c
+// Constants 0 and 1 for READ and WRITE
+enum { READ, WRITE };
+
+void ejecutar_cmd(char* cmd, char* p) {
+  execlp(cmd, cmd, p, NULL);
+}
+
+// Debe ejecutar "ls -al"
+void ejecutar_hijo_1(int pipe_fd[]) {
+  // Cerrar lectura
+  close(pipe_fd[READ]);
+  // Conectar escritura a stdout
+  dup2(pipe_fd[WRITE], STDOUT_FILENO);
+  // Ejecutar programa
+  ejecutar_cmd("ls", "-al");
+}
+
+// Debe ejecutar "wc -l"
+void ejecutar_hijo_2(int pipe_fd[]) {
+  // Cerrar escritura
+  close(pipe_fd[WRITE]);
+  // Conectar lectura a stdin
+  dup2(pipe_fd[READ], STDIN_FILENO);
+  // Ejecutar programa
+  ejecutar_cmd("wc", "-l");
+}
+
+int main(int argc, char const* argv[]) {
+  int pipe_fd[2];
+  pipe(pipe_fd);
+
+  if (fork() == 0) {
+    ejecutar_hijo_1(pipe_fd);
+  }
+
+  if (fork() == 0) {
+    ejecutar_hijo_2(pipe_fd);
+  }
+
+  // El padre cierra el fd de escritura
+  // Solo así hijo_2 va a recibir EOF cuando hijo_1 termina
+  close(pipe_fd[WRITE]);
+
+  // Esperamos que terminen los hijos antes de terminar el padre
+  wait(NULL);
+  wait(NULL);
+
+  return 0;
+}
+```
+
+### Ejercicio 17
+
+```c
+// Constants 0 and 1 for READ and WRITE
+enum { READ, WRITE };
+// Constants 0, 1 and 2 for PROCESSES
+enum { PADRE, HIJO_1, HIJO_2 };
+
+// Pipes, variables globales
+int pipes[3][2];
+
+void rutina_padre(){
+    int msg = 0;
+    while(13){
+        if(msg >= 50) break;
+        printf("Padre envía a Hijo_1 el valor %d,\n", msg);
+        // Escribo en pipe
+        write(pipes[PADRE][WRITE], &msg, sizeof(msg));
+        // Leo de hijo2 msg e incremento
+        read(pipes[HIJO_2][READ], &msg, sizeof(msg));
+        msg++;
+    }
+    exit(0);
+}
+
+void rutina_hijo1(pid_t pid_padre, pid_t pid_hijo2){
+    int msg;
+    while(13){
+        // Leo de padre msg
+        read(pipes[PADRE][READ], &msg, sizeof(msg));
+        if(msg > 50) break;
+        // Incremento y escribo
+        msg++;
+        printf("Hijo_1 envía a Hijo_2 el valor %d,\n", msg);
+        write(pipes[HIJO_1][WRITE], &msg, sizeof(msg));
+    }
+    exit(0);
+}
+
+void rutina_hijo2(pid_t pid_hijo1, pid_t pid_padre){
+    int msg;
+    while(msg != 50){
+        // Leo de hijo1 msg
+        read(pipes[HIJO_1][READ], &msg, sizeof(msg));
+        if(msg > 50) break;
+        // Incremento y escribo
+        msg++;
+        printf("Hijo_2 envía a Padre el valor %d,\n", msg);
+        write(pipes[HIJO_2][WRITE], &msg, sizeof(msg));
+    }
+    exit(0);
+}
+
+int main(){
+    // Creo pipes
+    for (int i = 0; i < 3; i++)
+        pipe(pipes[i]);
+    
+    pid_t pid_padre = getppid();
+    pid_t pid_hijo1 = fork();
+    pid_t pid_hijo2 = fork();
+
+    if(pid_hijo1 < 0 || pid_hijo2 < 0) // si falla algun forkeo
+        exit(EXIT_FAILURE);
+
+    if(pid_hijo1 == 0){
+        rutina_hijo1(pid_padre, pid_hijo2);
+    } else if(pid_hijo2 == 0){
+        rutina_hijo2(pid_hijo1, pid_padre);
+    } else {
+        rutina_padre(pid_hijo1, pid_hijo2);
+    }
+
+    return 0;
+}
+```
+
+Output:
+```
+$ ./ej17 
+Padre envía a Hijo_1 el valor 0,
+Hijo_1 envía a Hijo_2 el valor 1,
+Hijo_2 envía a Padre el valor 2,
+Padre envía a Hijo_1 el valor 3,
+Hijo_1 envía a Hijo_2 el valor 4,
+[...]
+Padre envía a Hijo_1 el valor 48,
+Hijo_1 envía a Hijo_2 el valor 49,
+Hijo_2 envía a Padre el valor 50,
+```
+
+
+### Ejercicio 18
+
+```c
+void ejecutarHijo(int i, int pipes[][2]){
+    pid_t pid_padre = getppid();
+}
+```
+
