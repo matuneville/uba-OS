@@ -1,4 +1,4 @@
-# Resueltos práctica 1
+# Resueltos práctica 1: Procesos y API del SO
 
 ### Ejercicio 1
 
