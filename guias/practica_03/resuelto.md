@@ -205,3 +205,143 @@ prod_C(){
         vacios.signal()
 }
 ```
+
+### Ejercicio 13
+
+```c
+sem mutex[N] = sem(1); // mutex por mesa, utilizado por 1 cliente a la vez
+
+int clientesEnMesa[N] = 0;
+int clientesJugaron[N] = 0;
+
+sem barreraJugar[N] = sem(0);
+sem barreraAbandonarMesa[N] = sem(0);
+
+cliente(){
+    // bloqueante hasta conseguir mesa
+    int mesa_i = conseguirMesa();
+
+    // va a la mesa y chequea si son 4
+    mutex[mesa_i].wait();
+    clientesEnMesa[mesa_i]++;
+    if (clientesEnMesa[mesa_i] == 4){
+        // habilito a los 4 a jugar
+        do 4 times:
+            barreraJugar[mesa_i].signal();
+    }
+    mutex[mesa_i].signal();
+
+    // esperamos a ser 4 para jugar
+    barreraJugar[mesa_i].wait();
+
+    // jugar no va dentro del mutex, pueden arrancar a jugar
+    // de forma paralela todos los procesos de la mesa
+    jugar();
+
+    mutex[mesa_i].wait();
+    // si esta acá es porque termino de jugar
+    clientesJugaron[mesa_i]++;
+    if (clientesJugaron[mesa_i] == 4){
+        // los 4 terminaron de jugar, pueden irse de la mesa recien ahora
+        do 4 times:
+            barreraAbandonarMesa[mesa_i].signal()
+        clientesJugaron[mesa_i] = 0;
+        clientesEnMesa[mesa_i] = 0;
+    }
+    mutex[mesa_i].signal();
+
+    barreraAbandonarMesa[mesa_i].wait();
+    
+    // Esta funcion la tiene que hacer cada uno supongo. Si no, iria
+    // dentro del if anterior del mutex
+    abandonarMesa(i);
+}
+```
+
+### Ejercicio 15
+
+```c
+sem mutexEsperar[N_especies][2] = sem(0); // un semaforo por cada sexo para cada especie
+sem mutexEntrar[N_especies] = sem(1);
+int entraron[N_especies] = 0;
+
+subirAlArca(especie_i, sexo){
+    mutexEsperar[especie_i][sexo].signal(); // aviso al otro sexo que ya estoy en puerta
+
+    mutexEsperar[especie_i][!sexo].wait();// esperamos al sexo contrario a que esté
+
+    mutexEntrar[especie_i].wait();
+    if( !entraron[especie_i]++ ){   // con esto me aseguro que solo el primero del sexo
+        entrar(especie_i);          // que entre al mutex ejecute la función entrar(i)
+    }
+    mutexEntrar[especie_i].signal();
+}
+```
+
+### Ejercicio 19
+
+Es igual al problema de los autos que cruzan un puente en ambas direcciones visto en clase.
+
+#### Inciso A
+
+```c
+sem cuerdaEnUso = sem(1); // impide que cruce un mono si hay otro en dirección contraria
+sem monosEnDireccion = [sem(5), sem(5)]
+sem mutex = [sem(1), sem(1)] 
+int monosCruzando = [0, 0]
+
+// dir (direccion) debe ser 0 o 1
+monoCruzarCuerdaUngaBunga(dir){
+    monosEnDireccion[dir].wait();
+
+    mutex[dir].wait()
+    if (monosCruzando[dir] == 0)
+        // es el primer mono en cruzar en dicha direccion
+        cuerdaEnUso.wait();
+    monosCruzando[dir]++;
+    mutex[dir].signal();
+
+    cruzar();
+
+    mutex[dir].wait();
+    monosCruzando[dir]--;
+    if (monosCruzando[dir] == 0)
+        // si fue el ultimo en cruzar, habilita a la otra direccion
+        cuerdaEnUso.signal();
+    mutex[dir].signal();
+
+    monosEnDireccion[dir].signal();
+}
+```
+
+#### Inciso B
+
+```c
+sem cuerdaEnUso = sem(1); // impide que cruce un mono si hay otro en dirección contraria
+sem monosEnDireccion = [sem(5), sem(5)]
+sem mutex = [sem(1), sem(1)] 
+int monosCruzando = [0, 0]
+
+// dir (direccion) debe ser 0 o 1
+monoCruzarCuerdaUngaBunga(dir){
+    monosEnDireccion[dir].wait();
+
+    mutex[dir].wait()
+    if (monosCruzando[dir] == 0)
+        // es el primer mono en cruzar en dicha direccion
+        cuerdaEnUso.wait();
+    monosCruzando[dir]++;
+    mutex[dir].signal();
+
+    cruzar();
+
+    mutex[dir].wait();
+    monosCruzando[dir]--;
+    if (monosCruzando[dir] == 0)
+        // si fue el ultimo en cruzar, habilita a la otra direccion
+        cuerdaEnUso.signal();
+    mutex[dir].signal();
+
+    monosEnDireccion[dir].signal();
+}
+```
