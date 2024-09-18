@@ -278,43 +278,50 @@ subirAlArca(especie_i, sexo){
 }
 ```
 
+### Ejercicio 18
+
+```c
+sem permisoCargar = sem(0);
+sem termineCargar = sem(0);
+sem permisoDescargar = sem(0);
+sem lavarRopa = sem(0);
+
+LavarropasSamsung(){
+	while(1){
+		estoyListo();
+		for(i in range(10)){
+			permisoCargar.signal(); // cargo una prenda de ropa
+			termineCargar.wait(); // termina de cargarse, sigo con la sgte
+		}
+		// lavo una vez que cargue todas las prendas
+		lavar();
+		// termina de lavar, habilito ropa a descargarse
+		puedenDescargarme();
+		for(i in range(10))
+			permisoDescargar.signal();
+		// espero a que se haya descargado toda
+		for(i in range(10))
+			ropaDescargada.wait();
+		// ya se descargo todo, puedo seguir con proxima tanda
+	}
+}
+
+RopaDeFlores(){
+	permisoCargar.wait(); // espero a poder cargar
+	entroAlLavarropas();
+	termineCargar.signal(); // termine de cargarla, va la sgte
+
+	permisoDescargar.wait(); // espero a que lavarropas lave y pueda salir
+	saquenmeDeAquí();
+	ropaDescargada.signal(); // aviso que se descargo
+}
+```
+
 ### Ejercicio 19
 
 Es igual al problema de los autos que cruzan un puente en ambas direcciones visto en clase.
 
 #### Inciso A
-
-```c
-sem cuerdaEnUso = sem(1); // impide que cruce un mono si hay otro en dirección contraria
-sem monosEnDireccion = [sem(5), sem(5)]
-sem mutex = [sem(1), sem(1)] 
-int monosCruzando = [0, 0]
-
-// dir (direccion) debe ser 0 o 1
-monoCruzarCuerdaUngaBunga(dir){
-    monosEnDireccion[dir].wait();
-
-    mutex[dir].wait()
-    if (monosCruzando[dir] == 0)
-        // es el primer mono en cruzar en dicha direccion
-        cuerdaEnUso.wait();
-    monosCruzando[dir]++;
-    mutex[dir].signal();
-
-    cruzar();
-
-    mutex[dir].wait();
-    monosCruzando[dir]--;
-    if (monosCruzando[dir] == 0)
-        // si fue el ultimo en cruzar, habilita a la otra direccion
-        cuerdaEnUso.signal();
-    mutex[dir].signal();
-
-    monosEnDireccion[dir].signal();
-}
-```
-
-#### Inciso B
 
 ```c
 sem cuerdaEnUso = sem(1); // impide que cruce un mono si hay otro en dirección contraria
