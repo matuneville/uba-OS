@@ -54,6 +54,25 @@ Turnaround Promedio = 1 + 11 + 12 + 22 / 4 = 11.5
 Waiting Time promedio = 0 + 1 + 2 + 12 / 4 = 3.75  
 Turnaround Promedio = 1 + 2 + 12 + 22 / 4 = 9.25
 
+### Ejercicio 11
+
+a) Schediling Multilevel feedback queues, con dealojo:
+```
+Cola 1: procesos 1 y 2, llegan en t=0, RR quantum = 1, rafagas 4 y 3
+    _____________________________
+p:  | 1 | 2 | 1 | 2 | 1 | 2 | 1 |
+    ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+t:  0   1   2   3   4   5   6   7
+```
+
+```
+Cola 2: procesos 3 y 4, llegan en t=0 y t=10, FCFS, rafagas 8 y 5
+    ___________________________
+p:  |       3       |    4    |
+    ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+t:  7              15        20
+```
+
 
 ### Ejercicio 14
 
