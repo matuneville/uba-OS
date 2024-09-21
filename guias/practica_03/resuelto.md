@@ -325,19 +325,65 @@ Es igual al problema de los autos que cruzan un puente en ambas direcciones vist
 
 ```c
 sem cuerdaEnUso = sem(1); // impide que cruce un mono si hay otro en dirección contraria
-sem monosEnDireccion = [sem(5), sem(5)]
+sem capacidad = sem(5);
 sem mutex = [sem(1), sem(1)] 
 int monosCruzando = [0, 0]
+int consecutivos = [0, 0]
 
 // dir (direccion) debe ser 0 o 1
 monoCruzarCuerdaUngaBunga(dir){
-    monosEnDireccion[dir].wait();
 
     mutex[dir].wait()
     if (monosCruzando[dir] == 0)
         // es el primer mono en cruzar en dicha direccion
         cuerdaEnUso.wait();
+    
+    if(consecutivos[dir] >= limiteConsecutivos)
+        direccionPrior[dir].wait()
+
+    capacidad.wait();
+    // si llegué acá es porque no hay monos de la otra direccion cruzando (o el ultimo en hacerlo ya termino)
     monosCruzando[dir]++;
+    consecutivos[dir]++;
+    mutex[dir].signal();
+
+    cruzar();
+
+    mutex[dir].wait();
+    monosCruzando[dir]--;
+    capacidad.signal();
+    if (monosCruzando[dir] == 0)
+        // si fue el ultimo en cruzar, habilita a la otra direccion
+        cuerdaEnUso.signal();
+    mutex[dir].signal();
+
+    monosEnDireccion[dir].signal();
+}
+```
+
+#### Inciso B
+
+```c
+sem cuerdaEnUso = sem(1); // impide que cruce un mono si hay otro en dirección contraria
+sem monosEnDireccion = [sem(5), sem(5)]
+sem mutex = [sem(1), sem(1)] 
+int monosCruzando = [0, 0]
+int consecutivos = [0, 0]
+
+sem priorizoDireccion = [sem(1), sem(1)]
+
+// dir (direccion) debe ser 0 o 1
+monoCruzarCuerdaUngaBunga(dir){
+
+    monosEnDireccion[dir].wait();
+
+    mutex[dir].wait()
+    if (monosCruzando[dir] == 0)
+        priorizoDireccion[dir].wait();
+        cuerdaEnUso.wait();
+    monosCruzando[dir]++;
+    consecutivos[dir]++;
+
     mutex[dir].signal();
 
     cruzar();

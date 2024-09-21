@@ -56,7 +56,7 @@ Turnaround Promedio = 1 + 2 + 12 + 22 / 4 = 9.25
 
 ### Ejercicio 11
 
-a) Schediling Multilevel feedback queues, con dealojo:
+a) Schediling Multilevel queues, con desalojo:
 ```
 Cola 1: procesos 1 y 2, llegan en t=0, RR quantum = 1, rafagas 4 y 3
     _____________________________
@@ -73,6 +73,7 @@ p:  |       3       |    4    |
 t:  7              15        20
 ```
 
+El enunciado no dice con qué criterio realiza un feedback así que dejo los diagramas a medias, como si fuera sin feedback.
 
 ### Ejercicio 14
 
@@ -137,9 +138,11 @@ Por otro lado, el servidor cuenta con suficiente espacio para almacenar temporal
 
 Utilizaremos una política de scheduling de colas de prioridad (sin feedback):
 
-- Cola de mayor prioridad, que administrará el disparo de alarma a operadores, ya que deben ser alertados de inmediato, puesto que es pertinente que las alarmas se activen dentro de un deadline estricto. Esta cola debe trabajar con un algoritmo de scheduling para Real Time, posiblemente con una política de Earliest-Deadline-First (mencionado en la teórica muy por arriba). Si no, podría también utilizarse un FCFS, si asumimos que las ráfagas de CPU utilizadas por los módulos de activación de alarmas no son muy largas.
+- Cola de mayor prioridad, que administrará el disparo de alarma a operadores, ya que deben ser alertados de inmediato, puesto que es pertinente que las alarmas se activen dentro de un deadline estricto. Esta cola debe trabajar con un algoritmo de scheduling para Real Time, posiblemente con una política de Earliest-Deadline-First (mencionado en la teórica muy por arriba). Si no, podría también utilizarse un FCFS, que si asumimos que las ráfagas de CPU utilizadas por los módulos de activación de alarmas no son muy largas es una buena idea, y además es lógico pensar que se activen las alarmas en el orden en que fueron disparadas.
 
-- Cola de prioridad intermedia, que administrará los procesos generados por los módulos de procesamiento de video, que leen el stream de video que llega desde una cámara y luego corren un algoritmo de detección de objetos. Aquí no tengo claro qué politica usar sobre la cola; tal vez un RR o un FCFS funcionaría bien, ya que debemos intercalar de manera eficiente entre el procesamiento de video y la detección de objetos, y si ambos son procesos de duración corta y similar en CPU, las políticas mencionadas tendrían un buen efecto. Otras políticas no funcionarían bien, como el caso de determinar prioridad a alguna de ambos tipos de tareas, o utilizar un Shortest-Job-First, ya que es pertinente la buena detección de movimiento sobre el procesamiento de video en tiempo real, y si uno de ambos tiene prioridad, se estaría trabajando con video viejo, o procesando video sin detectar movimiento. Esto empeoraría si le añadimos desalojo.
+- Cola de prioridad intermedia, que administrará los procesos generados por los módulos de procesamiento de video, que leen el stream de video que llega desde una cámara y luego corren un algoritmo de detección de objetos. Esta, a su vez, la podemos dividir en otras dos colas, que funcionen con feedback, haciendo que si un proceso pasa mucho tiempo en la cola de menor privilegio, suba a la de mayor:
+  - Una de mayor privilegio, para los procesos que trabajan con E/S, que al tener ráfagas de CPU cortas pues bloquean a menudo, funcionaría bien con una política Round-Robin con un quantum corto, dedicándole un tiempo de ejecución justo a cada proceso, como pide el enunciado.
+  - Una de menor privilegio, para los procesos que no trabajan con E/S. Un Round-Robin con un quantum un poco mayor se ajustaría bien al problema.  
 
-- Cola de menor prioridad para almacenamiento de videos y compresión, ya que son tareas periódicas y pesadas que se ejecutarán en momentos que no requieren mucha atención en otros procesos. Acá considero que no es tan pertinente elegir alguna política de scheduling que destaque por sobre otras, teniendo en cuenta que se ejecutan esporádicamente y en momentos en que las colas de mayor prioridad estén "tranquilas". Además, al tener una carja baja y de ráfagas cortas de CPU, no habría peligro de starvation o convoy effect. Vamos a elegir como schedulling un Shortest-Job-First (por decir alguno).
+- Cola de menor prioridad para almacenamiento de videos y compresión, ya que son tareas periódicas y pesadas que se ejecutarán en momentos que no requieren mucha atención en otros procesos. Acá considero que no es tan pertinente elegir alguna política de scheduling que destaque por sobre otras, teniendo en cuenta que se ejecutan esporádicamente y en momentos en que las colas de mayor prioridad estén "tranquilas". Además, al tener una carja baja y de ráfagas cortas de CPU, no habría peligro de starvation o convoy effect. Vamos a elegir como schedulling un FCFS.
 
