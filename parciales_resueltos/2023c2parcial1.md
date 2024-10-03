@@ -23,22 +23,19 @@ def comprasTaylorSwift():
 	permisoComprar.wait()
 
 	usuariosEntraronAComprar.getAndInc()
+	# permitimos que compren de a muchos a la vez
+	comprar_ticket()
+	usuariosCompraron.getAndInc()
 
 	mutexComprar.wait()
-	if usuariosCompraron == 0 and usuariosEntraronAComprar == 10:
+	if usuariosCompraron == 1 and usuariosEntraronAComprar == 10:
 		# si soy el primero en entrar a comprar, y ya todos los 10 entraron a esta seccion
 		# abro la barrera para que hagan fila muchas personas, y asi ninguno llegó a colarse
 		barreraBloqueada = False
 		# dejo pasar a todos los que estaban bloqueados para que pasen a la cola de compra
 		barreraHacerCola.signal(personasEnBarrera)
 		personasEnBarrera = 0
-	mutexComprar.signal()	
 
-	# permitimos que compren de a muchos a la vez
-	comprar_ticket()
-	usuariosCompraron.getAndInc()
-
-	mutexComprar.wait()
 	if usuariosCompraron == 10:
 		# si fui el ultimo en comprar, antes de permitir que compren 10 mas de la fila, debo
 		# cerrar la barrera asi mientras aquellos entran, ninguno que no estaba en la fila se puede colar
@@ -128,3 +125,4 @@ void procesoHijo(int pipe[2]){
 
 ### Inciso B
 
+fiaca :p
