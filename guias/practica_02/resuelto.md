@@ -103,8 +103,6 @@ Podemos decir entonces que con un RR de quantum corto (lo suficiente como para q
 
 ### Ejercicio 16
 
-Aquí tienes el enunciado ajustado para que puedas copiar y pegar en Markdown:
-
 Una seriografía es una técnica para el estudio de los órganos en movimiento. Se realiza utilizando un aparato llamado seriógrafo, que ejecuta varias radiografías por segundo y muestra en una pantalla una serialización digital de estas imágenes, dando como resultado una especie de video.
 
 Existen seriógrafos que permiten editar algunas características de las imágenes a medida que se van generando, mientras se está llevando a cabo el estudio médico. Entre otras cosas, permiten ajustar el brillo y el contraste de las imágenes, y hacer zoom-in y zoom-out. Así, se permite una edición “en vivo” del video.
@@ -119,10 +117,8 @@ Se tienen entonces los siguientes procesos:
 
 Creo que el enunciado quiere hacer mucho énfasis en que los procesos de edición, que a priori se ven como poco caros en CPU, con ráfagas cortas ya que serían solo ajustar algunos valores, tengan una mayor prioridad que el de renderización de imágenes. Según este esquema, podemos basar el scheduling en dos colas de priodidad:
 
-- La primera, de prioridad 0, que contenga a los procesos de edición de video, y trabajando con un FCFS ya que no habría problema de convoy effect pues los procesos no se los ve que consuman mucho tiempo de CPU.
+- La primera, de prioridad 0, que contenga a los procesos de edición de video ya que se quiere tener sobre ellos un efecto Real-Time, y trabajando con un FCFS, que no generaria problema de convoy effect pues los procesos no se los ve que consuman mucho tiempo de CPU. Además, tiene sentido trabajar con esta política ya que se ejecutan según el orden en que el usuario los solicita.
 - La segunda, de prioridad 1, que renderice la imágen a partir de los ajustes de edición de video, que ya fueron procesados al tener mayor prioridad y en consecuencia mejor tiempo de respuesta.
-
-Agrego comentario de Joni: "No necesitamos utilizar una política con desalojo pues si se presiona un botón durante la generación de una imagen no tendría sentido modificar ese parámetro inmediatamente pues obtendríamos, por ejemplo, una imagen partida en donde una porción tiene un brillo y otra porción otro brillo distinto."
 
 ### Ejercicio 17
 
