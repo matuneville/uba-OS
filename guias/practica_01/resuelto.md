@@ -633,3 +633,15 @@ void handlerSIGCHLDpadre(){
     exit(EXIT_SUCCESS);
 }
 ```
+
+Output:
+```
+$ ./estrella 
+Cuál es el significado de la vida?
+Dejame pensarlo...
+Ya sé el significado de la vida
+Mirá vos. El significado de la vida es 42
+Bang bang, estás liquidado perra
+Me voy a mirar crecer las flores desde abajo
+Te voy a buscar en la oscuridad
+```
