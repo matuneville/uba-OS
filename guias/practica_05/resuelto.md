@@ -151,7 +151,7 @@ int write(int sector, void *data){
 	escribir_datos(data_kernel);
 	// espero a que se envie el dato
 	while(IN(DATA_REDY)!=1){
-		pause();
+		continue;
 	}
 	// termine, apago el motor y fuerzo la espera de 200ms a que termine de apagarse,
 	// antes de lo cual no es posible comenzar nuevas operaciones
@@ -259,5 +259,72 @@ int driver_write(){
     sem_signal(&mutex);
     
     return IO_OK;
+}
+```
+
+### Ejercicio 8
+
+```c
+semaphore mutex;
+semaphore printed;
+
+
+void handler_printed(){
+	// informo que termine de imprimir
+	sema_signal(&printed);
+}
+
+int driver_init(){
+    sem_init(&mutex, 1);
+    sem_init(&printed, 0);
+    
+    request_irq(HP_FINISHED_INT, handler_printed);
+    
+    return IO_OK;
+}
+
+int driver_remove(){
+    free_irq(HP_FINISHED_INT);
+    
+    return IO_OK;
+}
+
+int driver_write(void *data, int size){
+	sema_wait(&mutex);
+
+	// traigo contenido a imprimir
+	void *kernel_data = kmalloc(size);
+	copy_from_user(kernel_data, data, size);
+
+	// ingreso direc a imprimir y tamaño, y empiezo proceso de impresion
+	OUT(LOC_TEXT_POINTER, data);
+	OUT(LOC_TEXT_SIZE, size);
+	OUT(LOC_CTRL, START);
+	
+	// chequeo que haya tinta
+	i = 0;
+	for(; i < 5; i++){
+		if(IN(LOC_CTRL) != LOW_INK){
+			break;
+		}
+	}
+	// si no hubo tinta, fallo
+	if(i == 5){ // i es 5 si nunca se hizo el break <=> nunca hallé tinta
+		return IO_ERROR;
+	}
+
+	// si hay tinta, imprimo
+	OUT(LOC_CTRL, PRINTING);
+	OUT(LOC_STATUS, BUSY);
+
+	// espero a que se termine de imprimir
+	sema_wait(&printed);
+
+	// esto tambien lo puedo hacer en el handler creo
+	// informo que ya termino proceso de impresion
+	OUT(LOC_CTRL, FINISHED);
+	OUT(LOC_STATUS, READY);
+
+	sema_signal(&mutex);
 }
 ```
