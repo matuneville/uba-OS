@@ -1,6 +1,6 @@
 ## Ejercicio 1
 
-![](../enunciados/Pasted%20image%2020240920203124.png)
+![](Pasted%20image%2020240920203124.png)
 
 Tenemos 3 procesos:
 - p1: Toma string como input de usuario, se lo envía a p2 y p3
@@ -64,7 +64,7 @@ main():
 
 ## Ejercicio 2
 
-![](../enunciados/Pasted%20image%2020240920203146.png)
+![](Pasted%20image%2020240920203146.png)
 
 ### Inciso a)
 
@@ -148,5 +148,5 @@ Generador(id):
 
 ## Ejercicio 4
 
-![](../enunciados/Pasted%20image%2020240920203238.png)
+![](Pasted%20image%2020240920203238.png)
 
