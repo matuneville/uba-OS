@@ -94,11 +94,13 @@ int balanza_init(){
 
 int balanza_remove(){
 	free_iqr(IQR_TIMER);
+	sem mtx_balanza = sema_init(1);
 	return IO_OK;
 }
 
 
 int balanza_read(void* data, int size){
+	mtx_balanza.wait();
     int peso = IN(PESO);
 
 	// chequeo si es invalido
@@ -119,6 +121,7 @@ int balanza_read(void* data, int size){
 
 	// si no hubo error, le escribimos el peso
     copy_to_user(data, peso, size);
+    mtx_balanza.signal();
     return IO_OK;
 }
 
@@ -166,9 +169,9 @@ int cinta_init(){
 
 int cinta_write(void* data, int size){
     int cinta_speed = 0;
+    mtx_cinta.wait();
     copy_from_user(&cinta_speed, data, size);
 
-	mtx_cinta.wait();
 	if(IN(STATUS) == OFF && cinta_speed != CINTA_STOP){
 		OUT(STATUS, ON);
 	}
