@@ -27,15 +27,6 @@ a) Proponer un diseño, indicando los registros que tendría cada dispositivo, j
 
 b) A partir del diseño del punto anterior, escribir los drivers correspondientes y el software de usuario. Escribir en pseudocódigo (estilo C) las funciones mínimas necesarias para poder satisfacer el objetivo planteado. El código deberá ser sintácticamente válido y respetar las buenas prácticas mencionadas durante las clases. Por simplicidad, siempre que esto no impacte en la solución, se permitirá omitir el chequeo de errores. Todas las decisiones implementadas deberán estar debidamente justificadas.
 
-
-
-- Se tiene que leer por entrada estándar, valores enteros positivos, T1, T2.
-- Si la balanza detecta que el peso es mayor a T2, entonces hay que detener la cinta porque no soporta más peso. Como esta situación es problemática, hay que avisar por el beeper con el valor EXCEEDED_WEIGHT.
-- Si el peso está entre T1 y T2, el motor tiene que ir a una velocidad lenta.
-- Si el peso es menor que T1, el motor tiene que ir a una velocidad rápida.
-- Si la balanza da 0, se tiene que apagar el motor ya que no hay paquetes que transportar.
-- Si la balanza da un resultado negativo, significa que hubo un inconveniente. Hay que volver a leer 10 veces interrumpidamente, una cada 100ms. Asumir que la computadora cuenta con timer interno que podemos usar con interrupciones. Si en alguna de las 10 veces retorna un resultado válido, lo tomamos como el valor correcto. Si en ningún caso nos devuelve algo válido, hay que avisar por el beeper el valor BROKEN_B.  
-
 ```c++
 //ssize_t write(int fd, const void *buf, size_t count);
 //ssize_t read(int fd, void *buf, size_t count);
@@ -45,13 +36,7 @@ int SLOW_SPEED = 1;
 int FAST_SPEED = 2;
 sem sem100 = sem(0);
 
-void handler_clock(int signal) {
-    sem100.signal();
-}
-
 int user_program(t1, t2){
-    //  declaramos handler...
-    signal(CLOCK, handler_clock);
 
     int balanza = open("/dev/balanza");
     int cinta = open("/dev/cinta");
@@ -61,110 +46,141 @@ int user_program(t1, t2){
     int peso = 0;
     while(true) {
         
-        read(balanza, &peso, sizeof(peso));
+        int balanza_ret = read(balanza, &peso, sizeof(peso));
 
-        if (peso < 0) {
-            int i = 0;
-            int ms_to_wait = 100;
-            //  retry de 10 veces
-            while(i++ < 10){
-                sem100.wait();
-                
-                read(balanza, &peso, sizeof(peso));
-                if ( peso > 0 ) break;
-            }
-            // hubo inconveniente!
-            if(i==10) {
-                write(beeper, &BROKEN_B, sizeof(BROKEN_B));
-                // terminamos
-                break;
-            }
+		// chequeo si obtuvo peso invalido
+        if (balanza_ret == IO_ERROR){
+	        write(beeper, &BROKEN_B, sizeof(BROKEN_B));
+	        break;
         }
 
-        if (peso < t1) {
+		// si el peso es válido, chequeo qué hacer
+        if (peso < t1){
             write(cinta, &FAST_SPEED, sizeof(FAST_SPEED));
         }
-        else if (peso > t2) {
+        else if (peso > t2){
             write(cinta, &CINTA_STOP, sizeof(CINTA_STOP));
             write(beeper, &EXCEEDED_WEIGHT, sizeof(EXCEEDED_WEIGHT));
         }
-        else if (t1 <= peso <= t2) {
+        else if (t1 <= peso <= t2){
             write(cinta, &LOW_SPEED, sizeof(LOW_SPEED));
         }
         else if(peso == 0){
             write(cinta, &CINTA_STOP, sizeof(CINTA_STOP));
         }
     }
+
+	return 0;
 }
 ```
 
 ```c++
-//BALANZA:
-// - registros:
-//    - PESO
-//  asumimos que esta siempre prendida...
-// - funciones:
-//  - init:
-//  - read
+/* ############ Balanza ############*/
+// registros: PESO
+// variable: time
+
+int handler_timer_100ms(){
+	// handler de interrupcion que se dispara cada 100ms
+	sem_timer_100ms.signal();
+	time -= 100;
+	return IO_OK;
+}
+
 int balanza_init(){
+	request_iqr(IQR_TIMER, handler_timer_100ms);
+	sem sem_timer_100ms = sema_init(0);
     return IO_OK;
 }
 
-//  copy_to_user(char *to, char *from, uint size)
-//  copy_from_user(char *to, char *from, uint size)
+int balanza_remove(){
+	free_iqr(IQR_TIMER);
+	return IO_OK;
+}
+
+
 int balanza_read(void* data, int size){
-    int weight = IN(PESO);
-    copy_to_user(data, weight, size);
+    int peso = IN(PESO);
+
+	// chequeo si es invalido
+	if(peso < 0){
+		int i = 0;
+		int ms_to_wait = 100;
+		//  retry de 10 veces
+		while(i++ < 10){
+			sem_timer_100ms.wait();
+			peso = IN(PESO);
+			if (peso > 0) break;
+		}
+		if(i==10){
+			// hubo inconveniente!
+			return IO_ERROR;
+		}
+    }
+
+	// si no hubo error, le escribimos el peso
+    copy_to_user(data, peso, size);
     return IO_OK;
 }
 
-//BEEPER:
-//  - registros:
-//      - STATUS
-//  - funciones:
-//      - 
-//  - semaforos?
-//
+
+/* ############ Beeper ############*/
+// registros: STATUS: BROKEN_B, EXCEEDED_WEIGHT
 
 void handler_termino_de_sonar(){
     beeper_sem.signal();
+    return IO_OK;
 }
 
-int beeper_init() {
-    //  damos de alta el mutex para lograr exclusion mutua... es decir,
-    //  no se pisen las señales de beep.
-    sem beeper_sem = sem(1);
-
+int beeper_init(){
+    //  damos de alta el mutex para que no se pisen las señales de beep
+    sem beeper_sem = sema_init(1);
+	request_iqr(INT_BEEP, handler_termino_de_sonar);
+	return IO_OK;
 }
 
-int beeper_read(void* data, int size){
-    //  capaz... simple...
+int beeper_remove(){
+	free_iqr(IQR_BEEP);
+	return IO_OK;
 }
 
 int beeper_write(void* data, int size){
     int beeper_signal = 0;
     copy_from_user(&beeper_signal, data, size);
-
+	// espero a que termine de sonar
     beeper_sem.wait();
     OUT(STATUS, beeper_signal);
+
+	return IO_OK;
 }
 
 
-// MOTOR DE CINTA:
-//  - registros:
-//      - VELOCIDAD: enum{SLOW, FAST}
-//      - STATUS:    enum{ON, OFF}
-//  
-//  - funciones:
-//      - write
-//      - init ?? con semaforos?
-//      
+/* ############ Cinta ############*/
+// registros: STATUS: ON, OFF
+//            VELOCIDAD: STOP, SLOW, FAST
 
+int cinta_init(){
+	// arranca ya prendida
+	sem mtx_cinta = sema_init(1);
+	return IO_OK;
+}
 
-// UTIL:
-//  - La cinta tiene 3 velocidades
-//  - Si la cinta tiene mucho peso entonces hay que bajar la velocidad
-//  - Hay un beeper que avisa cuando hay un inconveniente con la balanza
-//  - 
+int cinta_write(void* data, int size){
+    int cinta_speed = 0;
+    copy_from_user(&cinta_speed, data, size);
+
+	mtx_cinta.wait();
+	if(IN(STATUS) == OFF && cinta_speed != CINTA_STOP){
+		OUT(STATUS, ON);
+	}
+
+	OUT(VELOCIDAD, cinta_speed);
+	
+	if(cinta_speed == CINTA_STOP){
+		OUT(STATUS, OFF);
+	}
+	mtx_cinta.signal();
+
+	return IO_OK;
+}
 
 ```
