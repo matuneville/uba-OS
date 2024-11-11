@@ -35,10 +35,10 @@ for i in range(TOTAL_BLOCKS):
 
 	offset -= BLOCK_SIZE
 
-/*
+"""
 repito proceso para el directorio B!
 pero ahora el if final queda asi:
-*/
+"""
 
 	# ...
 	if dir_entry->name == 'c.txt':
