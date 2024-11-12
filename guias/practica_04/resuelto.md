@@ -88,3 +88,46 @@ Total: 22 bloques (21 si el inodo se encuentra en memoria).
 2. Es importante que la cantidad de sectores utilizados para guardar estructuras auxiliares sea acotada, independientemente del tamaño del disco: **Sistema basado en inodos**, ya que la tabla de FAT, como direcciona a todo el disco, su tamaño será proporcional al tamaño del mismo, según la granularidad de bloques. En cambio, un sistema basado en inodos se encuentra acotado a un inodo por archivo existente, y cada uno tiene un tamaño acotado.
 3. Es importante que el tamaño máximo de archivo sólo esté limitado por el tamaño del disco: **FAT** suena como una opción más lógica para este caso, ya que permite que toda entrada de su tabla direccione a los bloques de un archivo que ocupe todo el disco. Por otro lado, con inodos solo podemos mapear a archivos que ocupen una cantidad de bloques limitado por la cantidad de bloques a la que pueda direccionar el inodo, pudiendo ser menor a la cantidad de bloques de datos del disco.
 4. Es importante que la cantidad de memoria principal ocupada por estructuras del file system en un instante dado sea (a lo sumo) lineal en la cantidad de archivos abiertos en ese momento: **Sistema basado en inodos**. Esta opción nos permite tener en memoria los inodos de los archivos abiertos en el momento. En cambio, un sistema FAT requiere tener la tabla en memoria, cuyo tamaño es proporcional al del disco, y no lineal en cuanto a cantidad de archivos abiertos.
+
+### Ejercicio 10
+
+```c++
+struct dir_entry{
+	int first_block_address;
+    int file_size;
+    int name_size;
+    char* name;
+}
+
+char* cargar_archivo(string directorios[]{
+	# obtengo datos de tabla de directorio de root
+	raw_data = root_table();
+
+	# obtengo tabla de dir entries
+	dir_entry* dir_table = parse_dir_entries(raw_data);
+
+	for(dir in directorios){
+		for(dir_entry in dir_table){
+			blocks[];
+			current_address = dir_entry->first_block_address;
+			
+			while(current_address != EOF){
+				blocks.pushback(current_address);
+				current_address = FAT_entry(current_address);
+			}
+			raw_data = read_blocks(blocks);
+			
+			if(i < directorios.length - 1){
+                dir_table = parse_directory_entries(raw_data);
+                break;
+            } 
+            else {
+                file_data = malloc(dir_entry.file_size);
+                memcpy(file_data, raw_data, dir_entry.file_size);
+                return file_data;
+            }
+		}
+	}
+	return NULL;
+}
+```
