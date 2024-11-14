@@ -1,3 +1,33 @@
+### Ejercicio 1
+a)
+```c++
+
+// la idea es hacerlo recursivo: recorro path, imprimo cada archivo (sea archiv o file)
+// - si encuentro files, no hago nada
+// - si encuentro dirs, llamo a mi_ls_r(dir)
+void my_ls_r(char* path){
+	// obtengo primer bloque de tabla de dir entries
+	uint first_block = get_first_block_from_path(path);
+	// recorro la tabla de dir entries a traves de todos sus bloques
+	char* buffer_block = malloc(BLOCK_SIZE);
+	while(first_block != EOF){
+		// traigo el bloque de dir entries de disco a memoria
+		read_block(buffer_block, first_block);
+		// recorro el bloque de dir entries
+		FATDirEntry* dir_entry_table = (FATDirEntry*) buffer;
+		for(int i = 0; i < BLOCK_SIZE / FAT_DIR_ENTRY_SIZE; i++){
+			// printeo el nombre
+			printf("%s\n", dir_entry_table[i].filename);
+			if(dir_entry_table[i].attribute == 0x2){
+				// es directorio
+				my_ls_r(concat(path, dir_entry_table[i].filename));
+			}
+		}
+	}
+}
+
+````
+
 ### Ejercicio 2
 
 El doctor Augusto Losano, experto en tecnología aplicada a logística, empezó a trabajar en BaaderEnvios, una nueva empresa de distribución de paquetes. Inspirados en el diseño de otras empresas, se está construyendo una central inteligente de transferencias cerca de Ciudad Universitaria. Diferentes camiones recogen los paquetes de sus clientes, llegan a la central y descargan su contenido. Estos paquetes son puestos en cintas transportadoras, donde diferentes personas, al final de su recorrido, agarran los paquetes y los clasifican.  
@@ -41,7 +71,6 @@ int user_program(t1, t2){
     int balanza = open("/dev/balanza");
     int cinta = open("/dev/cinta");
     int beeper = open("/dev/beeper");
-    int timer = open("/dev/timer");
     
     int peso = 0;
     while(true) {

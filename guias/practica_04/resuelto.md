@@ -99,11 +99,11 @@ struct dir_entry{
     char* name;
 }
 
-char* cargar_archivo(string directorios[]{
-	# obtengo datos de tabla de directorio de root
+char* cargar_archivo(string directorios[]){
+	// obtengo datos de tabla de directorio de root
 	raw_data = root_table();
 
-	# obtengo tabla de dir entries
+	// obtengo tabla de dir entries
 	dir_entry* dir_table = parse_dir_entries(raw_data);
 
 	for(dir in directorios){

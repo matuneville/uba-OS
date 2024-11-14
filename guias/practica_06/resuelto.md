@@ -167,12 +167,12 @@ void imprimir_habilitado(const char *nombre_usuario, const char* clave, const ch
 }
 ```
 
-1. Podemos dar la siguiente configuración de permisos al binario del programa: `-rws --x --x`
+1. Podemos dar la siguiente configuración de permisos al binario del programa: `-rws --x --x` 
 	- El **binario del programa** debe ser propiedad de `root`.
 	- Se debe activar el **bit `setuid`** usando `chmod u+s`.
 	Con esto, logramos lo siguiente:
 	- El `s` en la en los permisos de propietario (user), que permite que el programa se ejecute con los permisos del propietario del archivo (en este caso, debe ser `root`), lo que le otorga acceso al archivo `/etc/shadow`.
-	- El resto de los permisos (`r-x` para group y others), indican que el grupo y otros usuarios tienen permisos de lectura y ejecución, pero no de escritura.  
+	- El resto de los permisos (`--x` para group y others), indican que el grupo y otros usuarios tienen permisos de lectura y ejecución, pero no de escritura.  
 
     Con esta configuración, el programa podrá acceder al archivo `/etc/shadow` para verificar las credenciales de los usuarios, mientras que el resto del sistema no se ve afectado por permisos elevados.
 
@@ -240,8 +240,6 @@ int main(int argc, char **argv) {
         finalmente, en la pos fmt[l+1] = "s" y fmt[l+1] = "\0"  
         tq fmt queda como = " %NNNNs\0" lo cual es el formato que utiliza scanf para indicar que debe leer caracteres de tipo string y le clava al final un '\0'  
         luego, lee a lo sumo NNNN caracteres de tipo string... de esta forma se fuerza a qué se ingresen a lo sumo NNNN caracteres....
-
-   
    
 2. Indique los nombres de las vulnerabilidades involucradas.
    - Integer overflow al tipar como `unsigned char` a `max_size`, dándole como máximo valor 255.
