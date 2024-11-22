@@ -23,10 +23,11 @@ void my_ls_r(char* path){
 				my_ls_r(concat(path, dir_entry_table[i].filename));
 			}
 		}
+		first_block = FAT[first_block];
 	}
 }
 
-````
+```
 
 ### Ejercicio 2
 

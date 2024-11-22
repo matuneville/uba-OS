@@ -12,7 +12,7 @@ uint* blocks_A = dir_inode_A->blocks
 uint offset = 0
 
 # recorremos todos los bloques de A
-for i in range(TOTAL_BLOCKS):
+for i in range(ceil(dir_inode_A->size / BLOCK_SIZE)):
 	# """Salvedad""" del ultimo bloque...
 	uint block1_addr = get_block_address(i)
 	uint block2_addr = get_block_address(i+1)
