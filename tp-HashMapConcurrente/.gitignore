@@ -1,0 +1,9 @@
+build
+
+.idea/
+.vscode/
+
+cmake-build-debug
+CMakeLists.txt
+
+codigo/.gdb_history
